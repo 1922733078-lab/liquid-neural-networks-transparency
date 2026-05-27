@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "Liquid Neural Networks Review: Transparency Archive"
+message: "If you use this transparency archive, please cite the archived release or Zenodo DOI when available."
+type: dataset
+authors:
+  - family-names: Xue
+    given-names: Zihang
+  - family-names: Zhu
+    given-names: Ming
+repository-code: "https://github.com/1922733078-lab/liquid-neural-networks-transparency"
+keywords:
+  - liquid neural networks
+  - continuous-time neural networks
+  - literature matrix
+  - reproducible benchmark
+  - neurocomputing
+license: CC-BY-4.0
+version: "1.0.0"
+date-released: "2026-05-27"

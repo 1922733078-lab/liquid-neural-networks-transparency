@@ -1,0 +1,24 @@
+{
+  "purpose": "Mechanism-isolation case study for irregular event-gap classification.",
+  "not_a_full_ltc_or_cfc_claim": true,
+  "configuration": {
+    "train_n": 700,
+    "test_n": 450,
+    "seeds": 8,
+    "sequence_horizon": 8.0,
+    "background_events": 48,
+    "reservoir_dim": 32,
+    "ridge_l2": 1.0
+  },
+  "models": {
+    "summary_features": "Twelve aggregate statistics with ridge readout.",
+    "fixed_single_scale": "Random recurrent encoder with one fixed time scale and ridge readout.",
+    "fixed_multi_scale": "Random recurrent encoder with fixed heterogeneous time scales and ridge readout.",
+    "adaptive_decay": "Random recurrent encoder with input-dependent event-gated decay and matched ridge readout."
+  },
+  "task": "Binary classification where the label depends on the time gap between a positive and a negative marker event under distractor spikes.",
+  "settings": {
+    "in_distribution": "Training and test background event times are sampled from the same uniform process.",
+    "time_gap_shift": "Test background event times are sampled from a clustered gamma process to stress irregular time gaps."
+  }
+}
