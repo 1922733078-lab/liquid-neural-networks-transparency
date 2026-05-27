@@ -34,4 +34,6 @@ The script uses Python, NumPy, and the standard library. It writes outputs to `b
 
 ## Citation
 
-If citing this archive, cite the GitHub release or the Zenodo DOI associated with the release, when available.
+If citing this archive, cite the archived Zenodo release:
+
+https://doi.org/10.5281/zenodo.20407957

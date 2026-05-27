@@ -8,6 +8,8 @@ authors:
   - family-names: Zhu
     given-names: Ming
 repository-code: "https://github.com/1922733078-lab/liquid-neural-networks-transparency"
+doi: "10.5281/zenodo.20407957"
+url: "https://zenodo.org/records/20407957"
 keywords:
   - liquid neural networks
   - continuous-time neural networks
