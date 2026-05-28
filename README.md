@@ -19,7 +19,7 @@ The repository does not include the submitted manuscript, final English manuscri
 
 ## Interpretation Boundary
 
-The literature matrix is an author audit trail for a narrative technical survey with PRISMA-style transparency. It is not a registered systematic-review database with independent dual screening, conflict arbitration, formal risk-of-bias scoring, or effect-size meta-analysis.
+The literature matrix is an author audit trail for a narrative technical survey with a transparent screening and routing log. It is not a registered systematic-review database and does not involve independent dual screening, conflict arbitration, formal risk-of-bias scoring, or effect-size meta-analysis.
 
 The synthetic benchmark is a didactic mechanism-isolation example. It should not be interpreted as evidence that any deployed LTC, CfC, NCP, or liquid SSM implementation dominates real-world time-series benchmarks.
 

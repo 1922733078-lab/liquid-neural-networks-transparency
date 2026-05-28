@@ -2,7 +2,7 @@
 
 ## Review Type
 
-This archive supports a narrative technical survey with PRISMA-style transparency. It is not a registered systematic review and does not claim independent dual screening, conflict arbitration, formal risk-of-bias scoring, or effect-size meta-analysis.
+This archive supports a narrative technical survey with a transparent screening and routing log. It is not a registered systematic review and does not claim independent dual screening, conflict arbitration, formal risk-of-bias scoring, or effect-size meta-analysis.
 
 ## Review Questions
 

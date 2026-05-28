@@ -172,6 +172,10 @@ def fit_ridge_classifier(x_train: np.ndarray, y_train: np.ndarray, x_test: np.nd
     std = x_train.std(axis=0) + 1e-6
     x_train = (x_train - mean) / std
     x_test = (x_test - mean) / std
+    x_train = np.nan_to_num(x_train, nan=0.0, posinf=0.0, neginf=0.0)
+    x_test = np.nan_to_num(x_test, nan=0.0, posinf=0.0, neginf=0.0)
+    x_train = np.clip(x_train, -50.0, 50.0)
+    x_test = np.clip(x_test, -50.0, 50.0)
 
     x_train = np.c_[np.ones(len(x_train)), x_train]
     x_test = np.c_[np.ones(len(x_test)), x_test]
@@ -180,8 +184,14 @@ def fit_ridge_classifier(x_train: np.ndarray, y_train: np.ndarray, x_test: np.nd
 
     penalty = np.eye(x_train.shape[1])
     penalty[0, 0] = 0.0
-    weights = np.linalg.solve(x_train.T @ x_train + l2 * penalty, x_train.T @ y_one_hot)
-    return (x_test @ weights).argmax(axis=1), int(weights.size)
+    aug_x = np.vstack([x_train, math.sqrt(l2) * penalty])
+    aug_y = np.vstack([y_one_hot, np.zeros((x_train.shape[1], y_one_hot.shape[1]))])
+    weights, *_ = np.linalg.lstsq(aug_x, aug_y, rcond=None)
+    weights = np.nan_to_num(weights, nan=0.0, posinf=0.0, neginf=0.0)
+    weights = np.clip(weights, -1e6, 1e6)
+    scores = np.einsum("ij,jk->ik", x_test, weights, optimize=True)
+    scores = np.nan_to_num(scores, nan=0.0, posinf=0.0, neginf=0.0)
+    return scores.argmax(axis=1), int(weights.size)
 
 
 def score(y_true: np.ndarray, y_pred: np.ndarray):
@@ -245,6 +255,43 @@ def summarize(rows: list[dict]):
     return summary_rows
 
 
+def paired_permutation_pvalue(a: np.ndarray, b: np.ndarray, permutations: int = 4096):
+    """Two-sided paired sign-flip permutation test for paired seed results."""
+    diff = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+    observed = abs(float(diff.mean()))
+    rng = np.random.default_rng(12345)
+    count = 0
+    for _ in range(permutations):
+        signs = rng.choice([-1.0, 1.0], size=diff.shape[0])
+        if abs(float((diff * signs).mean())) >= observed - 1e-12:
+            count += 1
+    return (count + 1.0) / (permutations + 1.0)
+
+
+def significance_rows(rows: list[dict]):
+    grouped = {}
+    for row in rows:
+        grouped.setdefault((row["setting"], row["model"]), []).append(row)
+    out = []
+    for setting in sorted({row["setting"] for row in rows}):
+        adaptive = sorted(grouped[(setting, "adaptive_decay")], key=lambda x: int(x["seed"]))
+        for baseline in ("fixed_single_scale", "fixed_multi_scale"):
+            base = sorted(grouped[(setting, baseline)], key=lambda x: int(x["seed"]))
+            for metric in ("accuracy", "macro_f1"):
+                a = np.asarray([float(x[metric]) for x in adaptive])
+                b = np.asarray([float(x[metric]) for x in base])
+                out.append(
+                    {
+                        "setting": setting,
+                        "comparison": f"adaptive_decay_vs_{baseline}",
+                        "metric": metric,
+                        "mean_difference": float((a - b).mean()),
+                        "paired_sign_flip_p": float(paired_permutation_pvalue(a, b)),
+                    }
+                )
+    return out
+
+
 def write_csv(path: Path, rows: list[dict]):
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
@@ -274,19 +321,33 @@ def main():
                 )
 
     summary_rows = summarize(run_rows)
+    sig_rows = significance_rows(run_rows)
     write_csv(OUT / "synthetic_irregular_benchmark_runs.csv", run_rows)
     write_csv(OUT / "synthetic_irregular_benchmark_summary.csv", summary_rows)
+    write_csv(OUT / "synthetic_irregular_benchmark_significance.csv", sig_rows)
 
     metadata = {
         "purpose": "Mechanism-isolation case study for irregular event-gap classification.",
         "not_a_full_ltc_or_cfc_claim": True,
         "configuration": cfg.__dict__,
+        "encoder_configuration": {
+            "reservoir_dim": cfg.reservoir_dim,
+            "activation": "tanh recurrent state update; sigmoid event gate for adaptive proxy",
+            "input_weight_initialization": "Normal(0, 0.9)",
+            "bias_initialization": "Normal(0, 0.25)",
+            "fixed_single_scale_tau": 0.9,
+            "fixed_multi_scale_tau": "log-spaced from 0.15 to 3.5",
+            "adaptive_proxy_tau": "base_tau * (0.55 + 3.0 * sigmoid(4 * (abs(u) - 0.85)))",
+            "readout": "ridge classifier with l2 = 1.0",
+            "trainable_parameters": "readout only; recurrent encoders are fixed random features",
+        },
         "models": {
             "summary_features": "Twelve aggregate statistics with ridge readout.",
             "fixed_single_scale": "Random recurrent encoder with one fixed time scale and ridge readout.",
             "fixed_multi_scale": "Random recurrent encoder with fixed heterogeneous time scales and ridge readout.",
-            "adaptive_decay": "Random recurrent encoder with input-dependent event-gated decay and matched ridge readout.",
+            "adaptive_decay": "Random recurrent adaptive-decay proxy with input-dependent event-gated decay and matched ridge readout.",
         },
+        "significance_test": "Two-sided paired sign-flip permutation test across the eight matched seeds; provided as a descriptive check for the didactic proxy, not as evidence for deployed liquid architectures.",
         "task": "Binary classification where the label depends on the time gap between a positive and a negative marker event under distractor spikes.",
         "settings": {
             "in_distribution": "Training and test background event times are sampled from the same uniform process.",
@@ -298,6 +359,7 @@ def main():
     print("Wrote:")
     print(OUT / "synthetic_irregular_benchmark_runs.csv")
     print(OUT / "synthetic_irregular_benchmark_summary.csv")
+    print(OUT / "synthetic_irregular_benchmark_significance.csv")
     print(OUT / "synthetic_irregular_benchmark_metadata.json")
     for row in summary_rows:
         print(

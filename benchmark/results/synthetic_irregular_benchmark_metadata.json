@@ -10,12 +10,24 @@
     "reservoir_dim": 32,
     "ridge_l2": 1.0
   },
+  "encoder_configuration": {
+    "reservoir_dim": 32,
+    "activation": "tanh recurrent state update; sigmoid event gate for adaptive proxy",
+    "input_weight_initialization": "Normal(0, 0.9)",
+    "bias_initialization": "Normal(0, 0.25)",
+    "fixed_single_scale_tau": 0.9,
+    "fixed_multi_scale_tau": "log-spaced from 0.15 to 3.5",
+    "adaptive_proxy_tau": "base_tau * (0.55 + 3.0 * sigmoid(4 * (abs(u) - 0.85)))",
+    "readout": "ridge classifier with l2 = 1.0",
+    "trainable_parameters": "readout only; recurrent encoders are fixed random features"
+  },
   "models": {
     "summary_features": "Twelve aggregate statistics with ridge readout.",
     "fixed_single_scale": "Random recurrent encoder with one fixed time scale and ridge readout.",
     "fixed_multi_scale": "Random recurrent encoder with fixed heterogeneous time scales and ridge readout.",
-    "adaptive_decay": "Random recurrent encoder with input-dependent event-gated decay and matched ridge readout."
+    "adaptive_decay": "Random recurrent adaptive-decay proxy with input-dependent event-gated decay and matched ridge readout."
   },
+  "significance_test": "Two-sided paired sign-flip permutation test across the eight matched seeds; provided as a descriptive check for the didactic proxy, not as evidence for deployed liquid architectures.",
   "task": "Binary classification where the label depends on the time gap between a positive and a negative marker event under distractor spikes.",
   "settings": {
     "in_distribution": "Training and test background event times are sampled from the same uniform process.",
